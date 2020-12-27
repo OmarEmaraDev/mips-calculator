@@ -3,8 +3,10 @@
 
 # Definitions for system calls.
 .eqv SYS_PRINT_INTEGER 1
+.eqv SYS_PRINT_FLOAT 2
 .eqv SYS_PRINT_STRING 4
 .eqv SYS_READ_INTEGER 5
+.eqv SYS_READ_FLOAT 6
 .eqv SYS_EXIT 10
 .eqv SYS_PRINT_CHARACTER 11
 .eqv SYS_READ_CHARACTER 12
@@ -34,6 +36,14 @@ printInteger:
   syscall
   pop_ra_and_return
 
+# Print the float stored in f12.
+.text
+printFloat:
+  push_ra
+  li $v0, SYS_PRINT_FLOAT
+  syscall
+  pop_ra_and_return
+
 # Print the null terimated string that starts at the addres stored in a0.
 .text
 printString:
@@ -56,6 +66,14 @@ printNewLine:
 readInteger:
   push_ra
   li $v0, SYS_READ_INTEGER
+  syscall
+  pop_ra_and_return
+
+# Read a float and store it in $f0.
+.text
+readFloat:
+  push_ra
+  li $v0, SYS_READ_FLOAT
   syscall
   pop_ra_and_return
 
@@ -95,27 +113,26 @@ subtract:
   jal printString
 
   # Read a.
-  jal readInteger
-  move $t0, $v0
+  jal readFloat
+  mov.s $f1, $f0
 
   # Print the message for b.
   la $a0, subtract_b_message
   jal printString
 
   # Read b.
-  jal readInteger
-  move $t1, $v0
+  jal readFloat
+  mov.s $f2, $f0
 
   # Subtract.
-  sub $t3, $t0, $t1
+  sub.s $f12, $f1, $f2
 
   # Print the result message.
   la $a0, result_message
   jal printString
 
-  # Print the result.
-  move $a0, $t3
-  jal printInteger
+  # Print the result which is already in f12.
+  jal printFloat
   jal printNewLine
 
   pop_ra_and_return
