@@ -11,6 +11,16 @@
 .eqv SYS_PRINT_CHARACTER 11
 .eqv SYS_READ_CHARACTER 12
 
+# Definitions for system call registers.
+.eqv REG_SYS_CALL_ID $v0
+.eqv REG_PRINT_INTEGER_ARG $a0
+.eqv REG_PRINT_FLOAT_ARG $f12
+.eqv REG_PRINT_STRING_ARG $a0
+.eqv REG_READ_INTEGER_RET $v0
+.eqv REG_READ_FLOAT_RET $f0
+.eqv REG_PRINT_CHAR_ARG $a0
+.eqv REG_READ_CHAR_RET $v0
+
 # Macro to push the return address to the stack.
 .macro push_ra
   addi $sp, $sp, -WORD_SIZE
@@ -28,27 +38,58 @@
 # Utilities
 #####
 
-# Print the integer stored in a0.
+# Print the integer stored in REG_PRINT_INTEGER_ARG.
 .text
 printInteger:
   push_ra
-  li $v0, SYS_PRINT_INTEGER
+  li REG_SYS_CALL_ID, SYS_PRINT_INTEGER
   syscall
   pop_ra_and_return
 
-# Print the float stored in f12.
+# Print the float stored in REG_PRINT_FLOAT_ARG.
 .text
 printFloat:
   push_ra
-  li $v0, SYS_PRINT_FLOAT
+  li REG_SYS_CALL_ID, SYS_PRINT_FLOAT
   syscall
   pop_ra_and_return
 
-# Print the null terimated string that starts at the addres stored in a0.
+# Print the null terimated string that starts at the address
+# stored in REG_PRINT_STRING_ARG.
 .text
 printString:
   push_ra
-  li $v0, SYS_PRINT_STRING
+  li REG_SYS_CALL_ID, SYS_PRINT_STRING
+  syscall
+  pop_ra_and_return
+
+# Read an integer and store it in REG_READ_INTEGER_RET.
+.text
+readInteger:
+  push_ra
+  li REG_SYS_CALL_ID, SYS_READ_INTEGER
+  syscall
+  pop_ra_and_return
+
+# Read a float and store it in REG_READ_FLOAT_RET.
+.text
+readFloat:
+  push_ra
+  li REG_SYS_CALL_ID, SYS_READ_FLOAT
+  syscall
+  pop_ra_and_return
+
+# Exist the program.
+.text
+exit:
+  li REG_SYS_CALL_ID, SYS_EXIT
+  syscall
+
+# Print the character stored in REG_PRINT_CHAR_ARG.
+.text
+printCharacter:
+  push_ra
+  li REG_SYS_CALL_ID, SYS_PRINT_CHARACTER
   syscall
   pop_ra_and_return
 
@@ -56,40 +97,17 @@ printString:
 .text
 printNewLine:
   push_ra
-  li $v0, SYS_PRINT_CHARACTER
-  li $a0, '\n'
-  syscall
+  li REG_PRINT_CHAR_ARG, '\n'
+  jal printCharacter
   pop_ra_and_return
 
-# Read an integer and store it in $v0.
-.text
-readInteger:
-  push_ra
-  li $v0, SYS_READ_INTEGER
-  syscall
-  pop_ra_and_return
-
-# Read a float and store it in $f0.
-.text
-readFloat:
-  push_ra
-  li $v0, SYS_READ_FLOAT
-  syscall
-  pop_ra_and_return
-
-# Read a character and store it in $v0.
+# Read a character and store it in REG_READ_CHAR_RET.
 .text
 readCharacter:
   push_ra
-  li $v0, SYS_READ_CHARACTER
+  li REG_SYS_CALL_ID, SYS_READ_CHARACTER
   syscall
   pop_ra_and_return
-
-# Exist the program.
-.text
-exit:
-  li $v0, SYS_EXIT
-  syscall
 
 #####
 # Operations
@@ -109,29 +127,29 @@ subtract_b_message: .asciiz  "Enter the b in (a - b):\n"
 subtract:
   push_ra
   # Print the message for a.
-  la $a0, subtract_a_message
+  la REG_PRINT_STRING_ARG, subtract_a_message
   jal printString
 
   # Read a.
   jal readFloat
-  mov.s $f1, $f0
+  mov.s $f1, REG_READ_FLOAT_RET
 
   # Print the message for b.
-  la $a0, subtract_b_message
+  la REG_PRINT_STRING_ARG, subtract_b_message
   jal printString
 
   # Read b.
   jal readFloat
-  mov.s $f2, $f0
-
-  # Subtract.
-  sub.s $f12, $f1, $f2
+  mov.s $f2, REG_READ_FLOAT_RET
 
   # Print the result message.
-  la $a0, result_message
+  la REG_PRINT_STRING_ARG, result_message
   jal printString
 
-  # Print the result which is already in f12.
+  # Subtract.
+  sub.s REG_PRINT_FLOAT_ARG, $f1, $f2
+
+  # Print the result.
   jal printFloat
   jal printNewLine
 
@@ -142,7 +160,7 @@ subtract:
 .text
 divide:
   push_ra
-  la $a0, unimplemented_message
+  la REG_PRINT_STRING_ARG, unimplemented_message
   jal printString
   pop_ra_and_return
 
@@ -151,7 +169,7 @@ divide:
 .text
 max:
   push_ra
-  la $a0, unimplemented_message
+  la REG_PRINT_STRING_ARG, unimplemented_message
   jal printString
   pop_ra_and_return
 
@@ -160,7 +178,7 @@ max:
 .text
 power:
   push_ra
-  la $a0, unimplemented_message
+  la REG_PRINT_STRING_ARG, unimplemented_message
   jal printString
   pop_ra_and_return
 
@@ -169,7 +187,7 @@ power:
 .text
 factorial:
   push_ra
-  la $a0, unimplemented_message
+  la REG_PRINT_STRING_ARG, unimplemented_message
   jal printString
   pop_ra_and_return
 
@@ -195,24 +213,25 @@ branch_table: .word subtract, divide, max, power, factorial, exit
 .globl main
 main:
   # Print the help message.
-  la $a0, help_message
+  la REG_PRINT_STRING_ARG, help_message
   jal printString
 
   # Read the operation code.
   jal readInteger
-  move $s0, $v0
+  move $s0, REG_READ_INTEGER_RET
 
   # Validate the operation code.
   sge $t0, $s0, 0
   sle $t1, $s0, 5
   and $t3, $t0, $t1
   bnez $t3, is_valid_operation_code
-    la $a0, invalid_operation_message
+    la REG_PRINT_STRING_ARG, invalid_operation_message
     jal printString
     b main
   is_valid_operation_code:
 
   # Call the operation from the branch table.
+  # Multiply by WORD_SIZE, which is equivalent to a left shift by 2.
   sll $s0, $s0, 2
   lw $s0, branch_table($s0)
   jalr $s0
