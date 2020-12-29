@@ -156,14 +156,53 @@ subtract:
   pop_ra_and_return
 
 # Divide operation.
-
+.data
+divide_a_message:.asciiz "Enter the first number a in (a / b) : \n"
+divide_b_message:.asciiz "Enter the secound number b in (a / b) : \n"
+divide_error_message:.asciiz "ERROR \n you should not divide a number by zero "
+zero_float: .float 0.0
 .text
 divide:
   push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  # Print the message for the first number a
+  la REG_PRINT_STRING_ARG, divide_a_message
   jal printString
+  
+  #Read a
+  jal readFloat
+  mov.s $f1, REG_READ_FLOAT_RET
+  
+  # Print the message for the secound number b
+  la REG_PRINT_STRING_ARG, divide_b_message
+  jal printString
+
+  # Read b.
+  jal readFloat
+  mov.s $f2, REG_READ_FLOAT_RET
+  
+  # assign zero to f3 to make a comparison
+  lwc1 $f3,zero_float
+
+  # comparison
+  c.eq.s $f2,$f3
+  
+  #Divide_operation
+  bc1f non_zero_divisor
+  
+  la REG_PRINT_STRING_ARG, divide_error_message
+  jal printString
+  
+  
   pop_ra_and_return
 
+  non_zero_divisor:
+  div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+  la REG_PRINT_STRING_ARG, result_message
+  jal printString
+  jal printFloat
+  jal printNewLine
+
+  pop_ra_and_return
 # Max operation.
 
 .text
