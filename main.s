@@ -109,6 +109,19 @@ readCharacter:
   syscall
   pop_ra_and_return
 
+
+# divide_error label if the user try to divide a number by zero 
+.data
+divide_error:.asciiz "ERROR \n you should not divide a number by zero "
+.text
+error22:
+li REG_SYS_CALL_ID,SYS_PRINT_STRING
+la REG_PRINT_STRING_ARG, divide_error
+jal printString
+pop_ra_and_return
+syscall
+
+
 #####
 # Operations
 #####
@@ -156,13 +169,39 @@ subtract:
   pop_ra_and_return
 
 # Divide operation.
-
+.data
+divide_a_message:.asciiz "Enter the first number a in (a / b) : \n"
+divide_b_message:.asciiz "Enter the secound number b in (a / b) : \n"
+number1: .float 0.0
 .text
 divide:
   push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  # Print the message for the first number a
+  la REG_PRINT_STRING_ARG, divide_a_message
   jal printString
-  pop_ra_and_return
+  
+  #Read a
+  jal readFloat
+  mov.s $f1, REG_READ_FLOAT_RET
+  
+  # Print the message for the secound number b
+  la REG_PRINT_STRING_ARG, divide_b_message
+  jal printString
+
+  # Read b.
+jal readFloat
+mov.s $f2, REG_READ_FLOAT_RET
+# assign zero to f3 to make a comparison
+ lwc1 $f3,number1
+ # comparison
+  c.eq.s $f2,$f3
+  # error function 
+   bc1t error22
+div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+
+jal printFloat
+jal printNewLine
+pop_ra_and_return
 
 # Max operation.
 
