@@ -114,14 +114,14 @@ readCharacter:
 #####
 
 .data
-unimplemented_message: .asciiz  "Unimplemented operation!\n"
-result_message: .asciiz  "The result is:\n"
+unimplemented_message: .asciiz "Unimplemented operation!\n"
+result_message: .asciiz "The result is:\n"
 
 # Subtract operation.
 
 .data
-subtract_a_message: .asciiz  "Enter the a in (a - b):\n"
-subtract_b_message: .asciiz  "Enter the b in (a - b):\n"
+subtract_a_message: .asciiz "Enter the a in (a - b):\n"
+subtract_b_message: .asciiz "Enter the b in (a - b):\n"
 
 .text
 subtract:
@@ -236,15 +236,15 @@ factorial:
 #####
 
 .data
-help_message: .ascii   "Choose the operation you would like to perform:\n"
-              .ascii   "  Subtract: 0\n"
-              .ascii   "  Divide: 1\n"
-              .ascii   "  Max: 2\n"
-              .ascii   "  Power: 3\n"
-              .ascii   "  Factorial: 4\n"
-              .asciiz  "  Quit: 5\n\n"
+help_message: .ascii  "Choose the operation you would like to perform:\n"
+              .ascii  "  Subtract: 0\n"
+              .ascii  "  Divide: 1\n"
+              .ascii  "  Max: 2\n"
+              .ascii  "  Power: 3\n"
+              .ascii  "  Factorial: 4\n"
+              .asciiz "  Quit: 5\n\n"
 
-invalid_operation_message: .asciiz  "Invalid operation!\n"
+invalid_operation_message: .asciiz "Invalid operation!\n"
 
 # Construct the operations branch table.
 branch_table: .word subtract, divide, max, power, factorial, quit
