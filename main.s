@@ -224,11 +224,46 @@ power:
 
 # Factorial operation.
 
+.data
+factorial_message: .asciiz "Enter the number to compute the factorial for:\n"
+factorial_error_message: .asciiz "The number must not be negative!\n"
+
 .text
 factorial:
   push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  # Print the message for the number.
+  la REG_PRINT_STRING_ARG, factorial_message
   jal printString
+
+  # Read the number.
+  jal readInteger
+  move $t0, REG_READ_INTEGER_RET
+
+  # Validate the input number.
+  bgez $t0, is_valid_factorial_input
+    la REG_PRINT_STRING_ARG, factorial_error_message
+    jal printString
+    pop_ra_and_return
+  is_valid_factorial_input:
+
+  # Compute the factorial by multiplying by integers from [number: 1].
+  li $t1, 1
+  factorial_loop_start:
+  beqz $t0, factorial_loop_end
+    mul $t1, $t1, $t0
+    sub $t0, $t0, 1
+    b factorial_loop_start
+  factorial_loop_end:
+
+  # Print the result message.
+  la REG_PRINT_STRING_ARG, result_message
+  jal printString
+
+  # Print the result.
+  move REG_PRINT_INTEGER_ARG, $t1
+  jal printInteger
+  jal printNewLine
+
   pop_ra_and_return
 
 #####

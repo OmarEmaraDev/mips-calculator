@@ -70,7 +70,7 @@ void factorial() {
   int n;
   scanf("%d", &n);
   if (n < 0) {
-    puts("The number must be greater than zero!");
+    puts("The number must not be negative!");
     return;
   }
 
