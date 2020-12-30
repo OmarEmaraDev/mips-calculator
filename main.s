@@ -81,7 +81,7 @@ readFloat:
 
 # Exist the program.
 .text
-exit:
+quit:
   li REG_SYS_CALL_ID, SYS_EXIT
   syscall
 
@@ -241,12 +241,12 @@ help_message: .ascii   "Choose the operation you would like to perform:\n"
               .ascii   "  Max: 2\n"
               .ascii   "  Power: 3\n"
               .ascii   "  Factorial: 4\n"
-              .asciiz  "  Exit: 5\n\n"
+              .asciiz  "  Quit: 5\n\n"
 
 invalid_operation_message: .asciiz  "Invalid operation!\n"
 
 # Construct the operations branch table.
-branch_table: .word subtract, divide, max, power, factorial, exit
+branch_table: .word subtract, divide, max, power, factorial, quit
 
 .text
 .globl main
