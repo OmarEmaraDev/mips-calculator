@@ -1,97 +1,113 @@
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void subtract() {
-  float a, b;
-  printf("Enter the a in (a - b):\n");
+  puts("Enter the a in (a - b):");
+  float a;
   scanf("%f", &a);
-  printf("Enter the b in (a - b):\n");
+  puts("Enter the b in (a - b):");
+  float b;
   scanf("%f", &b);
-  puts("The result is: ");
+  puts("The result is:");
   printf("%.2f\n", a - b);
 }
 
 void divide() {
-  float a, b;
-  printf("Enter the a in (a / b):\n");
+  puts("Enter the a in (a / b):");
+  float a;
   scanf("%f", &a);
-  printf("Enter the b in (a / b):\n");
+  puts("Enter the b in (a / b):");
+  float b;
   scanf("%f", &b);
-  if (b == 0) {
-    puts("The denominator musn't be zero");
+
+  if (b == 0.0f) {
+    puts("The denominator musn't be zero!");
     return;
   }
-  puts("The result is: ");
+
+  puts("The result is:");
   printf("%.2f\n", a / b);
 }
 
 void power() {
-  float a, b;
-  printf("Enter the a in (a ^ b):\n");
+  puts("Enter the a in (a ^ b):");
+  float a;
   scanf("%f", &a);
-  printf("Enter the b in (a ^ b):\n");
+  puts("Enter the b in (a ^ b):");
+  float b;
   scanf("%f", &b);
-  puts("The result is: ");
-  printf("%.2f", pow(a, b));
+  puts("The result is:");
+  printf("%.2f\n", pow(a, b));
 }
 
 void max() {
+  puts("Enter the length of the list you want to compute the max for:");
   int n;
-  float max, number;
-  printf("Enter how many iterations you want:\n");
   scanf("%d", &n);
+  if (n < 2) {
+    puts("The list must have at least two elements!");
+    return;
+  }
 
-  printf("Enter the number: ");
-  scanf("%f", &number);
-  max = number;
-  n--;
+  float max = -FLT_MAX;
   for (int i = 0; i < n; i++) {
-    printf("Enter the number: ");
+    puts("Enter the next number:");
+    float number;
     scanf("%f", &number);
     if (number > max) {
       max = number;
     }
   }
-  printf("The max = %.2f\n", max);
+
+  puts("The result is:");
+  printf("%.2f\n", max);
 }
 
 void factorial() {
-  int a;
-  printf("Enter to get the factorial of number a\n");
-  scanf("%d", &a);
-  if (a < 0) {
-    printf("it must be greater than zero\n");
-    return;
-  } else if (a == 0 || a == 1) {
-    printf("%d\n", 0);
+  puts("Enter the number to compute the factorial for:");
+  int n;
+  scanf("%d", &n);
+  if (n < 0) {
+    puts("The number must be greater than zero!");
     return;
   }
-  int sum = 1;
-  do {
-    sum *= a--;
-  } while (a != 1);
-  printf("%d\n", sum);
+
+  int factorial = 1;
+  for (int i = 1; i <= n; i++) {
+    factorial *= i;
+  }
+
+  puts("The result is:");
+  printf("%d\n", factorial);
 }
 
-void (*branchTable[])() = {&subtract, &divide, &max, &power, &factorial};
+void quit() { exit(0); }
+
+void (*branchTable[])() = {&subtract, &divide, &max, &power, &factorial, &quit};
 
 int main() {
   while (1) {
-    puts("Choose the operation you would like to perform: ");
-    puts("Subtract: 0");
-    puts("Divide: 1");
-    puts("Max: 2");
-    puts("Power: 3");
-    puts("Factorial: 4");
-    puts("Exit: 5");
+    puts("Choose the operation you would like to perform:");
+    puts("  Subtract: 0");
+    puts("  Divide: 1");
+    puts("  Max: 2");
+    puts("  Power: 3");
+    puts("  Factorial: 4");
+    puts("  Quit: 5");
+    puts("");
+
     int n;
     scanf("%d", &n);
-    if (n == 5) {
-      return 0;
+    if (n < 0 || n > 5) {
+      puts("Invalid operation!");
+      continue;
     }
-    if (n < 5 && n >= 0) {
-      (*branchTable[n])();
-    }
+
+    (*branchTable[n])();
+
+    puts("");
   }
   return 0;
 }
