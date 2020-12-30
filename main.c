@@ -23,7 +23,7 @@ void divide() {
   scanf("%f", &b);
 
   if (b == 0.0f) {
-    puts("The denominator musn't be zero!");
+    puts("The divisior must not be zero!");
     return;
   }
 

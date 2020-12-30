@@ -156,53 +156,54 @@ subtract:
   pop_ra_and_return
 
 # Divide operation.
+
 .data
-divide_a_message:.asciiz "Enter the first number a in (a / b) : \n"
-divide_b_message:.asciiz "Enter the secound number b in (a / b) : \n"
-divide_error_message:.asciiz "ERROR \n you should not divide a number by zero "
+divide_a_message: .asciiz "Enter the a in (a / b):\n"
+divide_b_message: .asciiz "Enter the b in (a / b):\n"
+divide_error_message: .asciiz "The divisor must not be zero!\n"
 zero_float: .float 0.0
+
 .text
 divide:
   push_ra
-  # Print the message for the first number a
+  # Print the message for a.
   la REG_PRINT_STRING_ARG, divide_a_message
   jal printString
-  
-  #Read a
+
+  # Read a.
   jal readFloat
   mov.s $f1, REG_READ_FLOAT_RET
-  
-  # Print the message for the secound number b
+
+  # Print the message for b.
   la REG_PRINT_STRING_ARG, divide_b_message
   jal printString
 
   # Read b.
   jal readFloat
   mov.s $f2, REG_READ_FLOAT_RET
-  
-  # assign zero to f3 to make a comparison
-  lwc1 $f3,zero_float
 
-  # comparison
-  c.eq.s $f2,$f3
-  
-  #Divide_operation
+  # Check if the divisor is zero.
+  lwc1 $f3, zero_float
+  c.eq.s $f2, $f3
   bc1f non_zero_divisor
-  
-  la REG_PRINT_STRING_ARG, divide_error_message
-  jal printString
-  
-  
-  pop_ra_and_return
-
+    la REG_PRINT_STRING_ARG, divide_error_message
+    jal printString
+    pop_ra_and_return
   non_zero_divisor:
-  div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+
+  # Print the result message.
   la REG_PRINT_STRING_ARG, result_message
   jal printString
+
+  # Divide
+  div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+
+  # Print the result.
   jal printFloat
   jal printNewLine
 
   pop_ra_and_return
+
 # Max operation.
 
 .text
