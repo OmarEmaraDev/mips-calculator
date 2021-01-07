@@ -235,13 +235,13 @@ divide:
   # Check if the divisor is zero.
   dmtc1 $zero, $f3
   c.eq.d $f2, $f3
-  bc1f non_zero_divisor
+  bc1f 1f
     dla $a0, divide_error_message
     jal printString
     stack_load_gpr $ra, 0
     stack_free 1
     jr $ra
-  non_zero_divisor:
+  1:
 
   # Print the result message.
   dla $a0, result_message
@@ -306,22 +306,22 @@ factorial:
   move $t0, $v0
 
   # Validate the input number.
-  bgez $t0, is_valid_factorial_input
+  bgez $t0, 1f
     dla $a0, factorial_error_message
     jal printString
     stack_load_gpr $ra, 0
     stack_free 1
     jr $ra
-  is_valid_factorial_input:
+  1:
 
   # Compute the factorial by multiplying integers in [number: 1].
   dli $s1, 1
-  factorial_loop_start:
-  beqz $t0, factorial_loop_end
+  1:
+  beqz $t0, 2f
     dmul $s1, $s1, $t0
     dsub $t0, $t0, 1
-    b factorial_loop_start
-  factorial_loop_end:
+    b 1b
+  2:
 
   # Print the result message.
   dla $a0, result_message
@@ -369,11 +369,11 @@ main:
   sge $t0, $s0, 0
   sle $t1, $s0, 5
   and $t3, $t0, $t1
-  bnez $t3, is_valid_operation_code
+  bnez $t3, 1f
     dla $a0, invalid_operation_message
     jal printString
     b main
-  is_valid_operation_code:
+  1:
 
   # Call the operation from the branch table.
   # Multiply by 8, which is equivalent to a left shift by 3.
