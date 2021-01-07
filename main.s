@@ -1,314 +1,385 @@
-# Definitions for system constants.
-.eqv WORD_SIZE 4
+# vim: filetype=asm
 
-# Definitions for system calls.
-.eqv SYS_PRINT_INTEGER 1
-.eqv SYS_PRINT_FLOAT 2
-.eqv SYS_PRINT_STRING 4
-.eqv SYS_READ_INTEGER 5
-.eqv SYS_READ_FLOAT 6
-.eqv SYS_EXIT 10
-.eqv SYS_PRINT_CHARACTER 11
-.eqv SYS_READ_CHARACTER 12
+.equ DWORD_SIZE, 8
 
-# Definitions for system call registers.
-.eqv REG_SYS_CALL_ID $v0
-.eqv REG_PRINT_INTEGER_ARG $a0
-.eqv REG_PRINT_FLOAT_ARG $f12
-.eqv REG_PRINT_STRING_ARG $a0
-.eqv REG_READ_INTEGER_RET $v0
-.eqv REG_READ_FLOAT_RET $f0
-.eqv REG_PRINT_CHAR_ARG $a0
-.eqv REG_READ_CHAR_RET $v0
+# Allocate a number of double words on the stack.
+.macro stack_allocate n
+  daddiu $sp, $sp, -(DWORD_SIZE * \n)
+.endm
 
-# Macro to push the return address to the stack.
-.macro push_ra
-  addi $sp, $sp, -WORD_SIZE
-  sw $ra, ($sp)
-.end_macro
+# Free a number of double words from the stack.
+.macro stack_free n
+  daddiu $sp, $sp, (DWORD_SIZE * \n)
+.endm
 
-# Macro to pop the return address from the stack and jump to it.
-.macro pop_ra_and_return
-  lw $ra, ($sp)
-  addi $sp, $sp, WORD_SIZE
-  jr $ra
-.end_macro
+# Store the GPR r in the stack at index n.
+.macro stack_store_gpr r, n
+  sd \r, (DWORD_SIZE * \n)($sp)
+.endm
+
+# Load the stack value at index n into GPR r.
+.macro stack_load_gpr r, n
+  ld \r, (DWORD_SIZE * \n)($sp)
+.endm
+
+# Load the stack value at index n into FPR r.
+.macro stack_load_fpr r, n
+  ldc1 \r, (DWORD_SIZE * \n)($sp)
+.endm
+
+# Load the address of the stack element at index n into GPR r.
+.macro stack_load_address r, n
+  daddiu \r, $sp, (DWORD_SIZE * \n)
+.endm
 
 #####
 # Utilities
 #####
 
-# Print the integer stored in REG_PRINT_INTEGER_ARG.
-.text
-printInteger:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_PRINT_INTEGER
-  syscall
-  pop_ra_and_return
+# Print the long stored in $a0.
 
-# Print the float stored in REG_PRINT_FLOAT_ARG.
+.data
+print_long_format: .asciz "%ld"
+
 .text
-printFloat:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_PRINT_FLOAT
-  syscall
-  pop_ra_and_return
+printLong:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  move $a1, $a0
+  dla $a0, print_long_format
+  jal printf
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# Print the double stored in $f12.
+
+.data
+print_double_format: .asciz "%lf"
+
+.text
+printDouble:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  dmfc1 $a1, $f12
+  dla $a0, print_double_format
+  jal printf
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Print the null terimated string that starts at the address
-# stored in REG_PRINT_STRING_ARG.
+# stored in $a0.
+
+.data
+print_string_format: .asciz "%s"
+
 .text
 printString:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_PRINT_STRING
-  syscall
-  pop_ra_and_return
+  stack_allocate 1
+  stack_store_gpr $ra, 0
 
-# Read an integer and store it in REG_READ_INTEGER_RET.
-.text
-readInteger:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_READ_INTEGER
-  syscall
-  pop_ra_and_return
+  move $a1, $a0
+  dla $a0, print_string_format
+  jal printf
 
-# Read a float and store it in REG_READ_FLOAT_RET.
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# Read a long and store it in $v0.
+
+.data
+read_long_format: .asciz "%ld"
+
 .text
-readFloat:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_READ_FLOAT
-  syscall
-  pop_ra_and_return
+readLong:
+  stack_allocate 2
+  stack_store_gpr $ra, 0
+
+  dla $a0, read_long_format
+  stack_load_address $a1, 1
+  jal scanf
+  stack_load_gpr $v0, 1
+
+  stack_load_gpr $ra, 0
+  stack_free 2
+  jr $ra
+
+# Read a double and store it in $f0.
+
+.data
+read_double_format: .asciz "%lf"
+
+.text
+readDouble:
+  stack_allocate 2
+  stack_store_gpr $ra, 0
+  
+  dla $a0, read_double_format
+  stack_load_address $a1, 1
+  jal scanf
+  stack_load_fpr $f0, 1
+
+  stack_load_gpr $ra, 0
+  stack_free 2
+  jr $ra
+
+# Print a new line.
+
+.data
+empty_string: .asciz ""
+
+.text
+printNewLine:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  dla $a0, empty_string
+  jal puts
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Exist the program.
 .text
 quit:
-  li REG_SYS_CALL_ID, SYS_EXIT
-  syscall
-
-# Print the character stored in REG_PRINT_CHAR_ARG.
-.text
-printCharacter:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_PRINT_CHARACTER
-  syscall
-  pop_ra_and_return
-
-# Print a new line character.
-.text
-printNewLine:
-  push_ra
-  li REG_PRINT_CHAR_ARG, '\n'
-  jal printCharacter
-  pop_ra_and_return
-
-# Read a character and store it in REG_READ_CHAR_RET.
-.text
-readCharacter:
-  push_ra
-  li REG_SYS_CALL_ID, SYS_READ_CHARACTER
-  syscall
-  pop_ra_and_return
+  move $a0, $zero
+  jal exit
 
 #####
 # Operations
 #####
 
 .data
-unimplemented_message: .asciiz "Unimplemented operation!\n"
-result_message: .asciiz "The result is:\n"
+unimplemented_message: .asciz "Unimplemented operation!\n"
+result_message: .asciz "The result is:\n"
 
 # Subtract operation.
 
 .data
-subtract_a_message: .asciiz "Enter the a in (a - b):\n"
-subtract_b_message: .asciiz "Enter the b in (a - b):\n"
+subtract_a_message: .asciz "Enter the a in (a - b):\n"
+subtract_b_message: .asciz "Enter the b in (a - b):\n"
 
 .text
 subtract:
-  push_ra
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
   # Print the message for a.
-  la REG_PRINT_STRING_ARG, subtract_a_message
+  dla $a0, subtract_a_message
   jal printString
 
   # Read a.
-  jal readFloat
-  mov.s $f1, REG_READ_FLOAT_RET
+  jal readDouble
+  mov.d $f24, $f0
 
   # Print the message for b.
-  la REG_PRINT_STRING_ARG, subtract_b_message
+  dla $a0, subtract_b_message
   jal printString
 
   # Read b.
-  jal readFloat
-  mov.s $f2, REG_READ_FLOAT_RET
+  jal readDouble
+  mov.d $f25, $f0
 
   # Print the result message.
-  la REG_PRINT_STRING_ARG, result_message
+  dla $a0, result_message
   jal printString
 
   # Subtract.
-  sub.s REG_PRINT_FLOAT_ARG, $f1, $f2
+  sub.d $f12, $f24, $f25
+
+  mov.s $f12, $f24
 
   # Print the result.
-  jal printFloat
+  jal printDouble
   jal printNewLine
 
-  pop_ra_and_return
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Divide operation.
 
 .data
-divide_a_message: .asciiz "Enter the a in (a / b):\n"
-divide_b_message: .asciiz "Enter the b in (a / b):\n"
-divide_error_message: .asciiz "The divisor must not be zero!\n"
-zero_float: .float 0.0
+divide_a_message: .asciz "Enter the a in (a / b):\n"
+divide_b_message: .asciz "Enter the b in (a / b):\n"
+divide_error_message: .asciz "The divisor must not be zero!\n"
+zero_double: .double 0.0
 
 .text
 divide:
-  push_ra
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
   # Print the message for a.
-  la REG_PRINT_STRING_ARG, divide_a_message
+  dla $a0, divide_a_message
   jal printString
 
   # Read a.
-  jal readFloat
-  mov.s $f1, REG_READ_FLOAT_RET
+  jal readDouble
+  mov.d $f1, $f0
 
   # Print the message for b.
-  la REG_PRINT_STRING_ARG, divide_b_message
+  dla $a0, divide_b_message
   jal printString
 
   # Read b.
-  jal readFloat
-  mov.s $f2, REG_READ_FLOAT_RET
+  jal readDouble
+  mov.d $f2, $f0
 
   # Check if the divisor is zero.
-  lwc1 $f3, zero_float
-  c.eq.s $f2, $f3
+  ldc1 $f3, zero_double
+  c.eq.d $f2, $f3
   bc1f non_zero_divisor
-    la REG_PRINT_STRING_ARG, divide_error_message
+    dla $a0, divide_error_message
     jal printString
-    pop_ra_and_return
+    stack_load_gpr $ra, 0
+    stack_free 1
+    jr $ra
   non_zero_divisor:
 
   # Print the result message.
-  la REG_PRINT_STRING_ARG, result_message
+  dla $a0, result_message
   jal printString
 
   # Divide
-  div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+  div.d $f12, $f1, $f2
 
   # Print the result.
-  jal printFloat
+  jal printDouble
   jal printNewLine
 
-  pop_ra_and_return
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Max operation.
 
 .text
 max:
-  push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  dla $a0, unimplemented_message
   jal printString
-  pop_ra_and_return
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Power operation.
 
 .text
 power:
-  push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  dla $a0, unimplemented_message
   jal printString
-  pop_ra_and_return
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 # Factorial operation.
 
 .data
-factorial_message: .asciiz "Enter the number to compute the factorial for:\n"
-factorial_error_message: .asciiz "The number must not be negative!\n"
+factorial_message: .asciz "Enter the number to compute the factorial for:\n"
+factorial_error_message: .asciz "The number must not be negative!\n"
 
 .text
 factorial:
-  push_ra
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
   # Print the message for the number.
-  la REG_PRINT_STRING_ARG, factorial_message
+  dla $a0, factorial_message
   jal printString
 
   # Read the number.
-  jal readInteger
-  move $t0, REG_READ_INTEGER_RET
+  jal readLong
+  move $t0, $v0
 
   # Validate the input number.
   bgez $t0, is_valid_factorial_input
-    la REG_PRINT_STRING_ARG, factorial_error_message
+    dla $a0, factorial_error_message
     jal printString
-    pop_ra_and_return
+    stack_load_gpr $ra, 0
+    stack_free 1
+    jr $ra
   is_valid_factorial_input:
 
-  # Compute the factorial by multiplying by integers from [number: 1].
-  li $t1, 1
+  # Compute the factorial by multiplying integers in [number: 1].
+  dli $s1, 1
   factorial_loop_start:
   beqz $t0, factorial_loop_end
-    mul $t1, $t1, $t0
-    sub $t0, $t0, 1
+    dmul $s1, $s1, $t0
+    dsub $t0, $t0, 1
     b factorial_loop_start
   factorial_loop_end:
 
   # Print the result message.
-  la REG_PRINT_STRING_ARG, result_message
+  dla $a0, result_message
   jal printString
 
   # Print the result.
-  move REG_PRINT_INTEGER_ARG, $t1
-  jal printInteger
+  move $a0, $s1
+  jal printLong
   jal printNewLine
 
-  pop_ra_and_return
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
 
 #####
 # Main
 #####
 
 .data
-help_message: .ascii  "Choose the operation you would like to perform:\n"
-              .ascii  "  Subtract: 0\n"
-              .ascii  "  Divide: 1\n"
-              .ascii  "  Max: 2\n"
-              .ascii  "  Power: 3\n"
-              .ascii  "  Factorial: 4\n"
-              .asciiz "  Quit: 5\n\n"
+help_message: .ascii "Choose the operation you would like to perform:\n"
+              .ascii "  Subtract: 0\n"
+              .ascii "  Divide: 1\n"
+              .ascii "  Max: 2\n"
+              .ascii "  Power: 3\n"
+              .ascii "  Factorial: 4\n"
+              .asciz "  Quit: 5\n\n"
 
-invalid_operation_message: .asciiz "Invalid operation!\n"
+invalid_operation_message: .asciz "Invalid operation!\n"
 
 # Construct the operations branch table.
-branch_table: .word subtract, divide, max, power, factorial, quit
+branch_table: .quad subtract, divide, max, power, factorial, quit
 
 .text
-.globl main
+.global main
 main:
   # Print the help message.
-  la REG_PRINT_STRING_ARG, help_message
+  dla $a0, help_message
   jal printString
 
   # Read the operation code.
-  jal readInteger
-  move $s0, REG_READ_INTEGER_RET
+  jal readLong
+  move $s0, $v0
 
   # Validate the operation code.
   sge $t0, $s0, 0
   sle $t1, $s0, 5
   and $t3, $t0, $t1
   bnez $t3, is_valid_operation_code
-    la REG_PRINT_STRING_ARG, invalid_operation_message
+    dla $a0, invalid_operation_message
     jal printString
     b main
   is_valid_operation_code:
 
   # Call the operation from the branch table.
-  # Multiply by WORD_SIZE, which is equivalent to a left shift by 2.
-  sll $s0, $s0, 2
-  lw $s0, branch_table($s0)
+  # Multiply by 8, which is equivalent to a left shift by 3.
+  dsll $s0, $s0, 3
+  ld $s0, branch_table($s0)
   jalr $s0
 
   # Print a new line and repeat main.
