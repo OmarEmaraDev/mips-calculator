@@ -210,7 +210,6 @@ subtract:
 divide_a_message: .asciz "Enter the a in (a / b):\n"
 divide_b_message: .asciz "Enter the b in (a / b):\n"
 divide_error_message: .asciz "The divisor must not be zero!\n"
-zero_double: .double 0.0
 
 .text
 divide:
@@ -234,7 +233,7 @@ divide:
   mov.d $f2, $f0
 
   # Check if the divisor is zero.
-  ldc1 $f3, zero_double
+  dmtc1 $zero, $f3
   c.eq.d $f2, $f3
   bc1f non_zero_divisor
     dla $a0, divide_error_message
