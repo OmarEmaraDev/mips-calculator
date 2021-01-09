@@ -217,12 +217,57 @@ max:
   pop_ra_and_return
 
 # Power operation.
+.data 
+power_a_message: .asciiz "Enter the a in (a ^ b):\n"
+power_b_message: .asciiz "Enter the b in (a ^ b):\n"
+zero_exponent_message: .asciiz "The result equals 1 " 		#Special_Case if exponent equals zero,Then the result equals one
 
 .text
-power:
-  push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+power:  
+  # Print the message for a.
+  la REG_PRINT_STRING_ARG, power_a_message
   jal printString
+
+  # Read a.
+  jal readInteger
+  move $t1, REG_READ_INTEGER_RET
+
+  # Print the message for b.
+  la REG_PRINT_STRING_ARG, power_b_message
+  jal printString
+
+  # Read b.
+  jal readInteger
+  move $t2, REG_READ_INTEGER_RET
+
+  # Check if the exponent is zero.
+  lwc1 $f3, zero_float
+  c.eq.s $f2, $f3
+  bc1f zero_exponent
+    la REG_PRINT_STRING_ARG,zero_exponent_message
+    jal printString
+    pop_ra_and_return
+  zero_exponent:
+
+  # Print the result message.
+  la REG_PRINT_STRING_ARG, result_message
+  jal printString
+
+  # Power
+  add $t0, $zero, $zero 	#intialize $t0=0 , $t0 is used to record how many times we do multiplication operation  
+  add $t3, $t3, 1		#set intial value of $t3 = 1
+  power_loop_start:
+    beq $t0, $t2, power_loop_end 
+    mul $t3, $t3, $t1		#multiplication of $t1 and $t4 into $t4  
+    addi $t0,$t0,1		#update the value of $t0
+    j power_loop_start
+  power_loop_end:
+  
+  # Print the result.
+  move REG_PRINT_STRING_ARG,$t3
+  jal printInteger
+  jal printNewLine
+
   pop_ra_and_return
 
 # Factorial operation.
