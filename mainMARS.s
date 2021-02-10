@@ -216,13 +216,63 @@ max:
   jal printString
   pop_ra_and_return
 
+
 # Power operation.
+.data 
+power_a_message: .asciiz "Enter the a in (a ^ b):\n"
+power_b_message: .asciiz "Enter the b in (a ^ b):\n"
 
 .text
-power:
+power:  
   push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  # Print the message for a.
+  la REG_PRINT_STRING_ARG, power_a_message
   jal printString
+
+  # Read a.
+  jal readInteger
+  move $s1, REG_READ_INTEGER_RET
+
+  # Print the message for b.
+  la REG_PRINT_STRING_ARG, power_b_message
+  jal printString
+
+  # Read b.
+  jal readInteger
+  move $s2, REG_READ_INTEGER_RET
+
+  # special case if b equals a negative value.
+  move $s4, $s1
+  Special_power_loop_start:
+  bltz $s2, Special_power_loop_end
+    mul $t1, $s3, $s1
+    add $s4, $s4, $t1
+    add $s2, $s2, 1
+    b Special_power_loop_start
+  Special_power_loop_end:
+  
+  # Print the result message.
+  li $t1, 1
+  div $s5, $t1, $s4
+  move REG_PRINT_STRING_ARG, $s5
+  jal printInteger
+  jal printNewLine
+  # Power
+  move $s3, $s1
+  Power_loop_start:
+  move $t2, $zero
+  beqz $s2, Power_loop_end
+    mul $t2, $s3, $s1
+    add $s3, $s3, $t2
+    sub $s2, $s2, 1
+    b  Power_loop_start
+  Power_loop_end:
+  
+  # Print the result.
+  move REG_PRINT_STRING_ARG,$s3
+  jal printInteger
+  jal printNewLine
+
   pop_ra_and_return
 
 # Factorial operation.
