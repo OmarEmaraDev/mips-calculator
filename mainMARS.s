@@ -216,11 +216,12 @@ max:
   jal printString
   pop_ra_and_return
 
-
 # Power operation.
 .data 
 power_a_message: .asciiz "Enter the a in (a ^ b):\n"
 power_b_message: .asciiz "Enter the b in (a ^ b):\n"
+power_error_message: .asciiz "a can't be 0 when b is negative!\n"
+one_float: .float 1.0
 
 .text
 power:  
@@ -231,7 +232,7 @@ power:
 
   # Read a.
   jal readInteger
-  move $s1, REG_READ_INTEGER_RET
+  move $s0, REG_READ_INTEGER_RET
 
   # Print the message for b.
   la REG_PRINT_STRING_ARG, power_b_message
@@ -239,38 +240,45 @@ power:
 
   # Read b.
   jal readInteger
-  move $s2, REG_READ_INTEGER_RET
+  move $s1, REG_READ_INTEGER_RET
 
-  # special case if b equals a negative value.
-  move $s4, $s1
-  Special_power_loop_start:
-  bltz $s2, Special_power_loop_end
-    mul $t1, $s3, $s1
-    add $s4, $s4, $t1
-    add $s2, $s2, 1
-    b Special_power_loop_start
-  Special_power_loop_end:
+  # Validate inputs.
+  seq $t0, $s0, $zero
+  slt $s2, $s1, $zero
+  and $t1, $t0, $s2
+  beqz $t1, is_valid_input
+    la REG_PRINT_STRING_ARG, power_error_message
+    jal printString
+    pop_ra_and_return
+  is_valid_input:
   
+  # Compute the power by multiplying a cumulatively b number of times.
+  abs $s1, $s1
+  li $t0, 1
+  power_loop_start:
+  beqz $s1, power_loop_end
+    mul $t0, $t0, $s0
+    sub $s1, $s1, 1
+    b power_loop_start
+  power_loop_end:
+
+  # Convert the result into a float.
+  mtc1 $t0, $f0
+  cvt.s.w $f0, $f0
+
+  # If b is negative, take the reciprocal.
+  beqz $s2, is_positive_power
+    lwc1 $f1, one_float
+    div.s $f0, $f1, $f0
+  is_positive_power:
+
   # Print the result message.
-  li $t1, 1
-  div $s5, $t1, $s4
-  move REG_PRINT_STRING_ARG, $s5
-  jal printInteger
-  jal printNewLine
-  # Power
-  move $s3, $s1
-  Power_loop_start:
-  move $t2, $zero
-  beqz $s2, Power_loop_end
-    mul $t2, $s3, $s1
-    add $s3, $s3, $t2
-    sub $s2, $s2, 1
-    b  Power_loop_start
-  Power_loop_end:
+  la REG_PRINT_STRING_ARG, result_message
+  jal printString
   
   # Print the result.
-  move REG_PRINT_STRING_ARG,$s3
-  jal printInteger
+  mov.s REG_PRINT_FLOAT_ARG, $f0
+  jal printFloat
   jal printNewLine
 
   pop_ra_and_return
