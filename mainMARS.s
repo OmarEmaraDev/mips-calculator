@@ -216,14 +216,15 @@ max:
   jal printString
   pop_ra_and_return
 
+
 # Power operation.
 .data 
 power_a_message: .asciiz "Enter the a in (a ^ b):\n"
 power_b_message: .asciiz "Enter the b in (a ^ b):\n"
-zero_exponent_message: .asciiz "The result equals 1 "
 
 .text
 power:  
+  push_ra
   # Print the message for a.
   la REG_PRINT_STRING_ARG, power_a_message
   jal printString
@@ -240,7 +241,7 @@ power:
   jal readInteger
   move $s2, REG_READ_INTEGER_RET
 
-  # special case if b equals a negative value.3
+  # special case if b equals a negative value.
   move $s4, $s1
   Special_power_loop_start:
   bltz $s2, Special_power_loop_end
@@ -266,9 +267,6 @@ power:
     sub $s2, $s2, 1
     b  Power_loop_start
   Power_loop_end:
-  # Print the result message.
-  la REG_PRINT_STRING_ARG, zero_exponent_message
-  jal printString
   
   # Print the result.
   move REG_PRINT_STRING_ARG,$s3
