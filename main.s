@@ -273,14 +273,72 @@ max:
   jr $ra
 
 # Power operation.
+.data
+power_a_message: .asciz "Enter the a in (a ^ b):\n"
+power_b_message: .asciz "Enter the b in (a ^ b):\n"
+power_error_message: .asciz "a can't be 0 when b is negative!\n"
 
 .text
 power:
   stack_allocate 1
   stack_store_gpr $ra, 0
 
-  dla $a0, unimplemented_message
+  # Print the message for a.
+  dla $a0, power_a_message
   jal printString
+
+  # Read the number.
+  jal readLong
+  move $s0, $v0
+
+  # Print the message for b.
+  dla $a0, power_b_message
+  jal printString
+
+  # Read the number.
+  jal readLong
+  move $s1, $v0
+
+  # Validate the input number.
+  seq $t0, $s0, $zero
+  slt $s2, $s1, $zero
+  and $t1, $t0, $s2
+  beqz $t1, 1f
+    dla $a0, power_error_message
+    jal printString
+    stack_load_gpr $ra, 0
+    stack_free 1
+    jr $ra
+  1:
+
+  # Compute the power by multiplying a cumulatively b number of times.
+  abs $s1, $s1
+  dli $t0, 1
+  1:
+  beqz $s1, 2f
+    dmul $t0, $t0, $s0
+    dsub $s1, $s1, 1
+    b 1b
+  2:
+
+  # Convert the result into a float.
+  dmtc1 $t0, $f0
+  cvt.d.l $f0, $f0
+
+  # If b is negative, take the reciprocal.
+  beqz $s2, 1f
+    li.d $f1, 1
+    div.d $f0, $f1, $f0
+  1:
+
+  # Print the result message.
+  dla $a0, result_message
+  jal printString
+
+  # Print the result.
+  mov.d $f12, $f0
+  jal printDouble
+  jal printNewLine
 
   stack_load_gpr $ra, 0
   stack_free 1
