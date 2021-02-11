@@ -246,11 +246,11 @@ power:
   seq $t0, $s0, $zero
   slt $s2, $s1, $zero
   and $t1, $t0, $s2
-  beqz $t1, is_valid_input
+  beqz $t1, is_valid_power_input
     la REG_PRINT_STRING_ARG, power_error_message
     jal printString
     pop_ra_and_return
-  is_valid_input:
+  is_valid_power_input:
   
   # Compute the power by multiplying a cumulatively b number of times.
   abs $s1, $s1
