@@ -2,7 +2,8 @@
 
 A simple calculator written in MIPS. A college assignment.
 
-The program can be executed on three different platforms.
+The program can be executed on three different platforms. Each of which is
+described in one of the following sections.
 
 ## Linux
 
@@ -19,7 +20,7 @@ The following programs need to be available in `PATH`:
 
 The GCC Cross Compiler Toolchain for the MIPS N64 Little Endian target
 and the MIPS musl Libc library are also needed as a dependency, but they
-will be automatically downloaded the first time the program is build.
+will be automatically downloaded the first time the program is built.
 
 ### Build
 
