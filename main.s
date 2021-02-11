@@ -194,8 +194,6 @@ subtract:
   # Subtract.
   sub.d $f12, $f24, $f25
 
-  mov.s $f12, $f24
-
   # Print the result.
   jal printDouble
   jal printNewLine
@@ -222,7 +220,7 @@ divide:
 
   # Read a.
   jal readDouble
-  mov.d $f1, $f0
+  mov.d $f24, $f0
 
   # Print the message for b.
   dla $a0, divide_b_message
@@ -230,11 +228,11 @@ divide:
 
   # Read b.
   jal readDouble
-  mov.d $f2, $f0
+  mov.d $f25, $f0
 
   # Check if the divisor is zero.
-  dmtc1 $zero, $f3
-  c.eq.d $f2, $f3
+  li.d $f4, 0
+  c.eq.d $f25, $f4
   bc1f 1f
     dla $a0, divide_error_message
     jal printString
@@ -248,7 +246,7 @@ divide:
   jal printString
 
   # Divide
-  div.d $f12, $f1, $f2
+  div.d $f12, $f24, $f25
 
   # Print the result.
   jal printDouble
@@ -322,13 +320,13 @@ power:
   2:
 
   # Convert the result into a float.
-  dmtc1 $t0, $f0
-  cvt.d.l $f0, $f0
+  dmtc1 $t0, $f24
+  cvt.d.l $f24, $f24
 
   # If b is negative, take the reciprocal.
   beqz $s2, 1f
-    li.d $f1, 1
-    div.d $f0, $f1, $f0
+    li.d $f25, 1
+    div.d $f24, $f25, $f24
   1:
 
   # Print the result message.
@@ -336,7 +334,7 @@ power:
   jal printString
 
   # Print the result.
-  mov.d $f12, $f0
+  mov.d $f12, $f24
   jal printDouble
   jal printNewLine
 
@@ -434,8 +432,7 @@ main:
   1:
 
   # Call the operation from the branch table.
-  # Multiply by 8, which is equivalent to a left shift by 3.
-  dsll $s0, $s0, 3
+  dmul $s0, $s0, DWORD_SIZE
   ld $s0, branch_table($s0)
   jalr $s0
 
