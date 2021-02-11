@@ -274,7 +274,7 @@ max:
 .data
 power_a_message: .asciz "Enter the a in (a ^ b):\n"
 power_b_message: .asciz "Enter the b in (a ^ b):\n"
-power_error_message: .asciz "a can't be 0 when b is negative!\n"
+power_error_message: .asciz "a can't be 0 when b is less than or equal 0!\n"
 
 .text
 power:
@@ -299,7 +299,7 @@ power:
 
   # Validate the input number.
   seq $t0, $s0, $zero
-  slt $s2, $s1, $zero
+  sle $s2, $s1, $zero
   and $t1, $t0, $s2
   beqz $t1, 1f
     dla $a0, power_error_message
