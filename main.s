@@ -1,5 +1,3 @@
-# vim: filetype=asm
-
 .equ DWORD_SIZE, 8
 
 # Allocate a number of double words on the stack.
