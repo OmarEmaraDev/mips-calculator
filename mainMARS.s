@@ -117,7 +117,6 @@ readCharacter:
 #####
 
 .data
-unimplemented_message: .asciiz "Unimplemented operation!\n"
 result_message: .asciiz "The result is:\n"
 
 # Subtract operation.
@@ -209,22 +208,80 @@ divide:
 
 # Max operation.
 
+.data
+max_list_length_message: .asciiz "Enter the length of the list you want to compute the max for:\n"
+max_input_message: .asciiz "Enter the next number:\n"
+max_error_message: .asciiz "The list must have at least two elements!\n"
+
 .text
 max:
   push_ra
-  la REG_PRINT_STRING_ARG, unimplemented_message
+  # Print the message for the list length.
+  la REG_PRINT_STRING_ARG, max_list_length_message
   jal printString
+
+  # Read the length of the list.
+  jal readInteger
+  move $s0, REG_READ_INTEGER_RET
+
+  # Check if the length of the list is valid.
+  sle $t0, $s0, 1
+  beqz $t0, max_list_length_is_valid
+    la REG_PRINT_STRING_ARG, max_error_message
+    jal printString
+    pop_ra_and_return
+  max_list_length_is_valid:
+
+  # Print the message for the first number.
+  la REG_PRINT_STRING_ARG, max_input_message
+  jal printString
+
+  # Read the first number.
+  jal readFloat
+  mov.s $f24, REG_READ_FLOAT_RET
+
+  # Iterate for the rest of the inputs.
+  sub $s0, $s0, 1
+  max_loop_start:
+  beqz $s0, max_loop_end
+    # Print the message for the next input.
+    la REG_PRINT_STRING_ARG, max_input_message
+    jal printString
+
+    # Read the next number.
+    jal readFloat
+    mov.s $f25, REG_READ_FLOAT_RET
+
+    # If the new number is larger, set it.
+    c.lt.s $f25, $f24
+    bc1t max_input_is_smaller
+      mov.s $f24, $f25
+    max_input_is_smaller:
+
+    sub $s0, $s0, 1
+    b max_loop_start
+  max_loop_end:
+
+  # Print the result message.
+  la REG_PRINT_STRING_ARG, result_message
+  jal printString
+
+  # Print the result.
+  mov.s REG_PRINT_FLOAT_ARG, $f24
+  jal printFloat
+  jal printNewLine
+
   pop_ra_and_return
 
 # Power operation.
-.data 
+.data
 power_a_message: .asciiz "Enter the a in (a ^ b):\n"
 power_b_message: .asciiz "Enter the b in (a ^ b):\n"
 power_error_message: .asciiz "a can't be 0 when b is less than or equal 0!\n"
 one_float: .float 1.0
 
 .text
-power:  
+power:
   push_ra
   # Print the message for a.
   la REG_PRINT_STRING_ARG, power_a_message
@@ -251,7 +308,7 @@ power:
     jal printString
     pop_ra_and_return
   is_valid_power_input:
-  
+
   # Compute the power by multiplying a cumulatively b number of times.
   abs $s1, $s1
   li $t0, 1
@@ -275,7 +332,7 @@ power:
   # Print the result message.
   la REG_PRINT_STRING_ARG, result_message
   jal printString
-  
+
   # Print the result.
   mov.s REG_PRINT_FLOAT_ARG, $f24
   jal printFloat

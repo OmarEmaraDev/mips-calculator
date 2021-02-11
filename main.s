@@ -157,7 +157,6 @@ quit:
 #####
 
 .data
-unimplemented_message: .asciz "Unimplemented operation!\n"
 result_message: .asciz "The result is:\n"
 
 # Subtract operation.
@@ -258,13 +257,72 @@ divide:
 
 # Max operation.
 
+.data
+max_list_length_message: .asciz "Enter the length of the list you want to compute the max for:\n"
+max_input_message: .asciz "Enter the next number:\n"
+max_error_message: .asciz "The list must have at least two elements!\n"
+
 .text
 max:
   stack_allocate 1
   stack_store_gpr $ra, 0
 
-  dla $a0, unimplemented_message
+  # Print the message for the list length.
+  dla $a0, max_list_length_message
   jal printString
+
+  # Read the length of the list.
+  jal readLong
+  move $s0, $v0
+
+  # Check if the length of the list is valid.
+  slt $t0, $s0, 2
+  beqz $t0, 1f
+    dla $a0, max_error_message
+    jal printString
+    stack_load_gpr $ra, 0
+    stack_free 1
+    jr $ra
+  1:
+
+  # Print the message for the first number.
+  dla $a0, max_input_message
+  jal printString
+
+  # Read the first number.
+  jal readDouble
+  mov.d $f24, $f0
+
+  # Iterate for the rest of the inputs.
+  dsub $s0, $s0, 1
+  1:
+  beqz $s0, 2f
+    # Print the message for the next input.
+    dla $a0, max_input_message
+    jal printString
+
+    # Read the next number.
+    jal readDouble
+    mov.d $f25, $f0
+
+    # If the new number is larger, set it.
+    c.lt.d $f25, $f24
+    bc1t 3f
+      mov.d $f24, $f25
+    3:
+
+    dsub $s0, $s0, 1
+    b 1b
+  2:
+
+  # Print the result message.
+  dla $a0, result_message
+  jal printString
+
+  # Print the result.
+  mov.d $f12, $f24
+  jal printDouble
+  jal printNewLine
 
   stack_load_gpr $ra, 0
   stack_free 1
