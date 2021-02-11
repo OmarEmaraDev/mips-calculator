@@ -135,7 +135,7 @@ subtract:
 
   # Read a.
   jal readFloat
-  mov.s $f1, REG_READ_FLOAT_RET
+  mov.s $f24, REG_READ_FLOAT_RET
 
   # Print the message for b.
   la REG_PRINT_STRING_ARG, subtract_b_message
@@ -143,14 +143,14 @@ subtract:
 
   # Read b.
   jal readFloat
-  mov.s $f2, REG_READ_FLOAT_RET
+  mov.s $f25, REG_READ_FLOAT_RET
 
   # Print the result message.
   la REG_PRINT_STRING_ARG, result_message
   jal printString
 
   # Subtract.
-  sub.s REG_PRINT_FLOAT_ARG, $f1, $f2
+  sub.s REG_PRINT_FLOAT_ARG, $f24, $f25
 
   # Print the result.
   jal printFloat
@@ -175,7 +175,7 @@ divide:
 
   # Read a.
   jal readFloat
-  mov.s $f1, REG_READ_FLOAT_RET
+  mov.s $f24, REG_READ_FLOAT_RET
 
   # Print the message for b.
   la REG_PRINT_STRING_ARG, divide_b_message
@@ -183,11 +183,11 @@ divide:
 
   # Read b.
   jal readFloat
-  mov.s $f2, REG_READ_FLOAT_RET
+  mov.s $f25, REG_READ_FLOAT_RET
 
   # Check if the divisor is zero.
-  lwc1 $f3, zero_float
-  c.eq.s $f2, $f3
+  mtc1 $zero, $f4
+  c.eq.s $f25, $f4
   bc1f non_zero_divisor
     la REG_PRINT_STRING_ARG, divide_error_message
     jal printString
@@ -199,7 +199,7 @@ divide:
   jal printString
 
   # Divide
-  div.s REG_PRINT_FLOAT_ARG, $f1, $f2
+  div.s REG_PRINT_FLOAT_ARG, $f24, $f25
 
   # Print the result.
   jal printFloat
@@ -263,13 +263,13 @@ power:
   power_loop_end:
 
   # Convert the result into a float.
-  mtc1 $t0, $f0
-  cvt.s.w $f0, $f0
+  mtc1 $t0, $f24
+  cvt.s.w $f24, $f24
 
   # If b is negative, take the reciprocal.
   beqz $s2, is_positive_power
-    lwc1 $f1, one_float
-    div.s $f0, $f1, $f0
+    lwc1 $f25, one_float
+    div.s $f24, $f25, $f24
   is_positive_power:
 
   # Print the result message.
@@ -277,7 +277,7 @@ power:
   jal printString
   
   # Print the result.
-  mov.s REG_PRINT_FLOAT_ARG, $f0
+  mov.s REG_PRINT_FLOAT_ARG, $f24
   jal printFloat
   jal printNewLine
 
@@ -308,10 +308,10 @@ factorial:
   is_valid_factorial_input:
 
   # Compute the factorial by multiplying by integers from [number: 1].
-  li $t1, 1
+  li $s1, 1
   factorial_loop_start:
   beqz $t0, factorial_loop_end
-    mul $t1, $t1, $t0
+    mul $s1, $s1, $t0
     sub $t0, $t0, 1
     b factorial_loop_start
   factorial_loop_end:
@@ -321,7 +321,7 @@ factorial:
   jal printString
 
   # Print the result.
-  move REG_PRINT_INTEGER_ARG, $t1
+  move REG_PRINT_INTEGER_ARG, $s1
   jal printInteger
   jal printNewLine
 
@@ -368,7 +368,7 @@ main:
 
   # Call the operation from the branch table.
   # Multiply by WORD_SIZE, which is equivalent to a left shift by 2.
-  sll $s0, $s0, 2
+  mul $s0, $s0, WORD_SIZE
   lw $s0, branch_table($s0)
   jalr $s0
 
