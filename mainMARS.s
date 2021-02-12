@@ -163,7 +163,6 @@ subtract:
 divide_a_message: .asciiz "Enter the a in (a / b):\n"
 divide_b_message: .asciiz "Enter the b in (a / b):\n"
 divide_error_message: .asciiz "The divisor must not be zero!\n"
-zero_float: .float 0.0
 
 .text
 divide:

@@ -31,7 +31,7 @@
 .endm
 
 #####
-# Utilities
+# IO Utilities
 #####
 
 # Print the long stored in $a0.
@@ -117,7 +117,7 @@ read_double_format: .asciz "%lf"
 readDouble:
   stack_allocate 2
   stack_store_gpr $ra, 0
-  
+
   dla $a0, read_double_format
   stack_load_address $a1, 1
   jal scanf
@@ -143,6 +143,157 @@ printNewLine:
   stack_load_gpr $ra, 0
   stack_free 1
   jr $ra
+
+#####
+# Math Utilities
+#####
+
+# Math constants.
+.data
+M_PI: .quad 0x400921fb54442d18
+M_NEGATIVE_PI: .quad 0xc00921fb54442d18
+M_TWO_PI: .quad 0x401921fb54442d18
+M_HALF_PI: .quad 0x3ff921fb54442d18
+
+# max($f12, $f13)
+maxLowLevel:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  mov.d $f0, $f12
+  c.lt.d $f13, $f12
+  bc1t 1f
+    mov.d $f0, $f13
+  1:
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# min($f12, $f13)
+minLowLevel:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  mov.d $f0, $f12
+  c.lt.d $f13, $f12
+  bc1f 1f
+    mov.d $f0, $f13
+  1:
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# mod($f12, $f13)
+# Zero checks are the caller's responsibility.
+modulo:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  # x - trunc(x / y) * y
+  div.d $f4, $f12, $f13
+  trunc.l.d $f4, $f4
+  cvt.d.l $f4, $f4
+  mul.d $f4, $f4, $f13
+  sub.d $f0, $f12, $f4
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+
+# sin($f12)
+# This is a polynomial approximation of sin over [-pi/2, pi/2]. The minmax
+# polynomial coefficients are computed using Remez's algorithm.
+# The input is first range-reduced to [-pi/2, pi/2] through a series of modulo
+# and max operations.
+
+.data
+SIN_COEF_0: .quad 0x3ff0000000000000
+SIN_COEF_1: .quad 0xbfc555555553e06a
+SIN_COEF_2: .quad 0x3f811111107ce982
+SIN_COEF_3: .quad 0xbf2a019fc5ae4e82
+SIN_COEF_4: .quad 0x3ec71dcca975860a
+SIN_COEF_5: .quad 0xbe5adfc4c151ef2e
+SIN_COEF_6: .quad 0x3de525ed57fdcb8d
+
+.text
+sinLowLevel:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  # Reduce the range of the input to [-2pi, 2pi].
+  ldc1 $f13, M_TWO_PI
+  jal modulo
+
+  # Reduce the range of the input to [-pi/2, pi/2].
+  # x = Min(x, PI - x);
+  mov.d $f12, $f0
+  ldc1 $f4, M_PI
+  sub.d $f13, $f4, $f0
+  jal minLowLevel
+  # x = Max(x, -PI - x);
+  mov.d $f12, $f0
+  ldc1 $f4, M_NEGATIVE_PI
+  sub.d $f13, $f4, $f0
+  jal maxLowLevel
+  # x = Min(x, PI - x);
+  mov.d $f12, $f0
+  ldc1 $f4, M_PI
+  sub.d $f13, $f4, $f0
+  jal minLowLevel
+
+  # Now compute the polynomial using Horner's method
+  # a<n> denotes one of the coefficients defined above.
+  # x2 = x * x;
+  # result = x * (a0 + x2 * (a1 + x2 * (a2 + x2
+  #            * (a3 + x2 * (a4 + x2 * (a5 + x2 * a6))))));
+  mov.d $f24, $f0
+  mul.d $f4, $f24, $f24
+  ldc1 $f0, SIN_COEF_6
+  ldc1 $f5, SIN_COEF_5
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  ldc1 $f5, SIN_COEF_4
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  ldc1 $f5, SIN_COEF_3
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  ldc1 $f5, SIN_COEF_2
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  ldc1 $f5, SIN_COEF_1
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  ldc1 $f5, SIN_COEF_0
+  mul.d $f6, $f4, $f0
+  add.d $f0, $f5, $f6
+  mul.d $f0, $f0, $f24
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# cos($f12)
+.text
+cosLowLevel:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  # sin(pi/2 - a) = cos(a)
+  ldc1 $f4, M_HALF_PI
+  sub.d $f12, $f4, $f12
+  jal sinLowLevel
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+#####
+# System Utilities
+#####
 
 # Exist the program.
 .text
@@ -301,13 +452,12 @@ max:
 
     # Read the next number.
     jal readDouble
-    mov.d $f25, $f0
+    mov.d $f12, $f0
+    mov.d $f13, $f24
 
-    # If the new number is larger, set it.
-    c.lt.d $f25, $f24
-    bc1t 3f
-      mov.d $f24, $f25
-    3:
+    # Take the max.
+    jal maxLowLevel
+    mov.d $f24, $f0
 
     dsub $s0, $s0, 1
     b 1b
@@ -448,6 +598,77 @@ factorial:
   stack_free 1
   jr $ra
 
+# Sine operation.
+
+.data
+sin_message: .asciz "Enter the a in sin(a) in radians:\n"
+
+.text
+sin:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  # Print the message for a.
+  dla $a0, sin_message
+  jal printString
+
+  # Read a.
+  jal readDouble
+  mov.d $f12, $f0
+
+  # Compute the sin of a.
+  jal sinLowLevel
+  mov.d $f24, $f0
+
+  # Print the result message.
+  dla $a0, result_message
+  jal printString
+
+  # Print the result.
+  mov.d $f12, $f24
+  jal printDouble
+  jal printNewLine
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
+# Cosine operation.
+
+.data
+cos_message: .asciz "Enter the a in cos(a) in radians:\n"
+
+.text
+cos:
+  stack_allocate 1
+  stack_store_gpr $ra, 0
+
+  # Print the message for a.
+  dla $a0, cos_message
+  jal printString
+
+  # Read a.
+  jal readDouble
+  mov.d $f12, $f0
+
+  # Compute the cos of a.
+  # sin(pi/2 - a) = cos(a)
+  jal cosLowLevel
+  mov.d $f24, $f0
+
+  # Print the result message.
+  dla $a0, result_message
+  jal printString
+
+  # Print the result.
+  mov.d $f12, $f24
+  jal printDouble
+  jal printNewLine
+
+  stack_load_gpr $ra, 0
+  stack_free 1
+  jr $ra
+
 #####
 # Main
 #####
@@ -459,12 +680,14 @@ help_message: .ascii "Choose the operation you would like to perform:\n"
               .ascii "  Max: 2\n"
               .ascii "  Power: 3\n"
               .ascii "  Factorial: 4\n"
-              .asciz "  Quit: 5\n\n"
+              .ascii "  Sin: 5\n"
+              .ascii "  Cos: 6\n"
+              .asciz "  Quit: 7\n\n"
 
 invalid_operation_message: .asciz "Invalid operation!\n"
 
 # Construct the operations branch table.
-branch_table: .quad subtract, divide, max, power, factorial, quit
+branch_table: .quad subtract, divide, max, power, factorial, sin, cos, quit
 
 .text
 .global main
@@ -479,7 +702,7 @@ main:
 
   # Validate the operation code.
   sge $t0, $s0, 0
-  sle $t1, $s0, 5
+  sle $t1, $s0, 7
   and $t3, $t0, $t1
   bnez $t3, 1f
     dla $a0, invalid_operation_message
